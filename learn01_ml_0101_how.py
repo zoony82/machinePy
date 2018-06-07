@@ -74,3 +74,17 @@ val_predictions = melb_model_new.predict(val_X)
 print(mean_absolute_error(val_y, val_predictions))
 
 # Compare different models
+def get_mae(max_leaf_nodes, predictors_train, predictors_val, targ_train, targ_val):
+    model = DecisionTreeRegressor(max_leaf_nodes=max_leaf_nodes, random_state=0)
+    model.fit(predictors_train, targ_train)
+    preds_val = model.predict(predictors_val)
+    mae = mean_absolute_error(targ_val, preds_val)
+    return(mae)
+
+
+for max_leaf_nodes in [5, 50, 500, 5000]:
+    my_mae = get_mae(max_leaf_nodes, train_X, val_X, train_y, val_y)
+    print("Max leaf nodes: %d  \t\t Mean Absolute Error:  %d" %(max_leaf_nodes, my_mae))
+
+# Result
+# Max leaf nodes: 500 is best model
