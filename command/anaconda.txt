@@ -1,0 +1,27 @@
+콘다 버젼 확인
+conda --version
+
+콘다 가상 환경 생성
+conda create --name python36 python=3.6
+
+가상환경 조회
+conda info --envs
+
+가상환경 활성화
+activate python36
+
+패키지 설치
+conda install simplejson
+conda install -c conda-forge plotnine
+conda install -c conda-forge/label/gcc7 plotnine
+
+패키지 조회
+conda list
+
+가상환경 비활성화
+deactivate python36
+
+가상환경 삭제
+conda remove --name python36 -all
+
+
