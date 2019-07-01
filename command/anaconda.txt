@@ -8,7 +8,7 @@ conda create --name python36 python=3.6
 conda info --envs
 
 가상환경 활성화
-activate python36
+conda activate python36
 
 패키지 설치
 conda install simplejson
@@ -19,7 +19,7 @@ conda install -c conda-forge/label/gcc7 plotnine
 conda list
 
 가상환경 비활성화
-deactivate python36
+conda deactivate python36
 
 가상환경 삭제
 conda remove --name python36 -all
