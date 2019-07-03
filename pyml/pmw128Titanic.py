@@ -90,7 +90,7 @@ def drop_features(df):
 
 #레이블 인코딩 수행
 def format_features(df):
-    df['Cabin'] = titanic_df['Cabin'].str[:1]
+    df['Cabin'] = df['Cabin'].str[:1]
     features = ['Cabin','Sex','Embarked']
     for feature in features:
         le = preprocessing.LabelEncoder()
