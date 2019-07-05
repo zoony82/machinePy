@@ -15,6 +15,7 @@ from sklearn.model_selection import cross_val_score
 
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, precision_score, recall_score, confusion_matrix
+from sklearn.preprocessing import Binarizer
 
 # %matplotlib inline
 
@@ -213,4 +214,45 @@ print('테스트 셋트에서 dt 정확도 :{0:.4f}'.format(accuracy)) # 0.8715
 #평가(정확도/정밀도/재현율)
 def get_clf_eval(y_test, pred):
     confusion = confusion_matrix(y_test, pred)
-    accuracy = accuracy_score(y_test, pred)
+    accuracy = accuracy_score(y_test, pred) # 정확도 : tn+tp / tn+fp+fn+tp
+    precision = precision_score(y_test,pred) # 정밀도 : tp / fp+tp -> 예측 성능을 더욱 정밀하게 측정
+    recall = recall_score(y_test,pred) # 재현율 : tp / tp+fn -> 실제 정답이 Negative 로 판별된것이 많은지 확인
+    print('오차행렬')
+    print(confusion)
+    print('정확도 : {0:.4f}, 정밀도 : {1:.4f}, 재현율 : {2:.4f}'.format(accuracy,precision,recall))
+
+
+#로지스틱 회귀 기반 예측한것으로 평가하기
+get_clf_eval(y_test,lr_pred)
+'''
+오차행렬
+[[108  10]
+ [ 14  47]]
+정확도 : 0.8659, 정밀도 : 0.8246, 재현율 : 0.7705
+=> 정밀도에 비해 재현율이 낮음 -> 트레이드 오프
+'''
+
+
+
+#LogisticRecression 결과를 확률로 나오게 변경 : .predict => .predict_proba (분류 항목별 확률을 리턴)
+lr_pred_proba = lr_clf.predict_proba(x_test) # 이진 분류일 경우 (0에대한 확률, 1에대한확률)
+
+#예측 확률과 예측값 한번에 표시
+pred_proba_result = np.concatenate([lr_pred_proba, lr_pred.reshape(-1,1)],axis=1)
+print(pred_proba_result)
+
+# 확률을 판단하는 threshold값을 조정해보자.
+custom_threshold = 0.4
+lr_pred_proba_1 = lr_pred_proba[:,-1].reshape(-1,1)
+binarizer = Binarizer(threshold=custom_threshold).fit(lr_pred_proba_1)
+lr_custom_predict = binarizer.transform(lr_pred_proba_1)
+
+# 재현율은 올라가고, 정밀도가 떨어짐
+# 분류 결정 임계값은 Positive 예측값의 확률을 봄
+get_clf_eval(y_test,lr_custom_predict)
+'''
+오차행렬
+[[97 21]
+ [11 50]]
+정확도 : 0.8212, 정밀도 : 0.7042, 재현율 : 0.8197
+'''
