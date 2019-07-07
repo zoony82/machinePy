@@ -17,6 +17,8 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, precision_score, recall_score, confusion_matrix
 from sklearn.preprocessing import Binarizer
 
+from sklearn.metrics import precision_recall_curve
+
 # %matplotlib inline
 
 titanic_df = pd.read_csv("/home/jjh/문서/dataset/titanic/train.csv")
@@ -126,6 +128,10 @@ titanic_df = pd.read_csv("/home/jjh/문서/dataset/titanic/train.csv")
 y_titanic_df = titanic_df['Survived']
 x_titanic_df = titanic_df.drop('Survived', axis = 1)
 x_titanic_df = transform_features(x_titanic_df)
+# 인코딩 된 Feature 확인
+x_titanic_df['Cabin'].unique() #[7, 2, 4, 6, 3, 0, 1, 5, 8]
+x_titanic_df['Sex'].unique() # [0,1]
+x_titanic_df['Embarked'].unique() # [0,1,2,3]
 
 #테스트 셋 추출
 x_train, x_test, y_train, y_test = train_test_split(x_titanic_df,y_titanic_df,test_size=0.2, random_state=11)
@@ -256,3 +262,86 @@ get_clf_eval(y_test,lr_custom_predict)
  [11 50]]
 정확도 : 0.8212, 정밀도 : 0.7042, 재현율 : 0.8197
 '''
+
+# 임계값을 0.4~0.6까지 0.05씩 증가시키며 평가지표를 조사
+thresholds = [0.4,0.45,0.5,0.55,0.6]
+def get_eval_by_threshold(y_test, pred_proba_c1, thersholds):
+    for t in thersholds:
+        binarizer = Binarizer(t).fit(pred_proba_c1)
+        predict = binarizer.transform(pred_proba_c1)
+        print('임계값:',t)
+        get_clf_eval(y_test,predict)
+
+get_eval_by_threshold(y_test,lr_pred_proba[:,-1].reshape(-1,1),thresholds)
+# 0.45 임계치가 0.5 대비 정확도는 비슷하고 정밀도가 약간 떨어지고, 재현율이 크게 상승=> 0.45를 선택
+
+# 이와 유사한 사이킷런 api 테스트
+
+# 레이블 값이 1일때의 예측 확률을 추출
+pred_proba_class1 = lr_clf.predict_proba(x_test)[:,1]
+
+# 실제값 데이터 세트와 레이블 값이 1일때의 예측 확률을 인자로 입력
+precisions, recalls, thresholds = precision_recall_curve(y_test,pred_proba_class1)
+print('반환된 분류 결정 임곗값 배열의 shape : ', thresholds.shape )
+
+# 샘플 10건만 추출, 임계값은 15step로 추출
+thr_idx = np.arange(0, thresholds.shape[0], 15)
+print('샘플용 임계값 10개 :', np.round(thresholds[thr_idx],3))
+print('샘플용 정밀도 10개 :', np.round(precisions[thr_idx],3))
+print('샘플용 재현율 10개 :', np.round(recalls[thr_idx],3))
+
+# 시각화
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+
+def precision_recall_curve_plot(y_test, pred_proba_c1):
+    #x축을 임계치로, y축을 정밀도(점선),재현율로
+    plt.figure(figsize=(8,6))
+    thre_boundary = thresholds.shape[0]
+    plt.plot(thresholds, precisions[0:thre_boundary],linestyle='--',label='precision')
+    plt.plot(thresholds, recalls[0:thre_boundary], label='recall')
+
+    # threshold 값 x축의 scale를 0.1 단위로 변경
+    start, end = plt.xlim()
+    plt.xticks(np.round(np.arange(start,end,0.1),2))
+
+    # x축 y축 label과 lebend 그리고 grid 설정
+    plt.xlabel('Threshold value')
+    plt.ylabel('Precision and Recall')
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+precision_recall_curve_plot(y_test, lr_clf.predict_proba(x_test)[:,1])
+
+#f1 score : 정밀도 재현율이 한쪽으로 치우침을 판단하는 지표
+from sklearn.metrics import f1_score
+f1 = f1_score(y_test, lr_pred)
+print(f1)
+
+#roc 그리기
+from sklearn.metrics import roc_curve
+#레이블 값이 1일 때의 예측 확률을 추출
+pred_proba_class1 = lr_clf.predict_proba(x_test)[:,1]
+# fprs : 1-특이도 = fp/fp+tn => fp:0인 케이스에 대해 1로 잘못 예측한 비율
+# tprs : 민감도(재현율) = tp/tp+fn => tp:1인 케이스에 대해 1로 예측한 비율
+# 임계값
+fprs, tprs, thresholds = roc_curve(y_test, pred_proba_class1)
+
+def roc_curve_plot(y_test, pred_proba_c1):
+    #임계값에 따른 fpr,ptr 값
+    fprs, tprs, thresholds = roc_curve(y_test, pred_proba_class1)
+    #roc 곡선 그리기
+    plt.plot(fprs, tprs, label='ROC')
+    #가운데 대각선 직선
+    plt.plot([0,1],[0,1], 'k--', label='RanDom')
+
+roc_curve_plot(y_test,pred_proba_class1)
+
+# roc 곡선 자체는 fpr/tpr의 변화 추이를 보는데 이용함
+# 성능 지표로 활용된느 것은 roc 곡선 아래 면적인 auc(Area Under Curve)
+# 일반적으로 1에 가까울 수록 좋은 수치
+
+from sklearn.metrics import roc_auc_score
+auc_score = roc_auc_score(y_test,lr_clf.predict(x_test))
+print(auc_score)
