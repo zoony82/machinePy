@@ -29,4 +29,3 @@ pre_sale_all_reset_index.head()
 max_delta_price = np.max(pre_sale_all_reset_index['변동액'])
 print(max_delta_price)
 
-#todo : ggplot 로 시각화 테스트 할 차례

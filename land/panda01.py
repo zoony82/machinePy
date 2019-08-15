@@ -134,4 +134,3 @@ df.append(df2)
 df.append(df2,ignore_index=True)
 
 
- #todo : 데이터 그룹 만들기 할 차례

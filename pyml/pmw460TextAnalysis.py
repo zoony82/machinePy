@@ -23,7 +23,7 @@ y_train = train_news.target
 test_news = fetch_20newsgroups(subset='test',remove=('headers','footers','quotes'), random_state=156)
 x_test = test_news.data
 y_test  = test_news.target
-print('학습 데이터 크기 {0}, 테스트 데이터 크기{1]',len(x_train),len(x_test))
+print('학습 데이터 크기 {0}, 테스트 데이터 크기{1}'.format(len(x_train),len(x_test)))
 
 
 #피처 벡터화 변환과 머신러닝 모델 학습/예측/평가
@@ -97,3 +97,24 @@ pipeline = Pipeline([
 pipeline.fit(x_train,y_train)
 pred = pipeline.predict(x_test)
 print('accuracy : ',accuracy_score(y_test,pred))
+
+#Pipeline 기반 파라메터 튜닝(GridSearchCV사용) - 20분 이상 소요됨
+from sklearn.pipeline import Pipeline
+
+pipeline = Pipeline([
+    ('tfidf_vect',TfidfVectorizer(stop_words='english')),
+    ('lr_clf',LogisticRegression())
+])
+
+#Pipeline에 기술된 각각의 객체 변수에 언더바 2개를 연달아 붙여 GridSearchCV에 사용될 파라미터/하이퍼 파라미터 이름과 값을 결정
+params = {'tfidf_vect__ngram_range':[(1,1),(1,2),(1,3)],
+          'tfidf_vect__max_df':[100,300,700],
+          'lr_clf__C':[1,5,10]}
+
+#GridSearchCV의 생성자에 Estimator가 아닌 Pipeline 객체 입력
+grid_cv_pipe = GridSearchCV(pipeline,param_grid=params,cv=3,scoring='accuracy',verbose=1)
+grid_cv_pipe.fit(x_train,y_train)
+print(grid_cv_pipe.best_params_, grid_cv_pipe.best_score_)
+
+pred = grid_cv_pipe.predict(x_test)
+print('정확도는 {0:.3f}'.format(accuracy_score((y_test,pred))))
