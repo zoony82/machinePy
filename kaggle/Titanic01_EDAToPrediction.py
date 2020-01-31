@@ -471,7 +471,9 @@ Some of them being SibSp andd Family_Size and Parch and Family_Size and some neg
 
 data.to_csv('/home/jjh/문서/dataset/titanic/data_clean.csv',index=False)
 
+############################
 # Part3: Predictive Modeling
+############################
 data_clean = pd.read_csv('/home/jjh/문서/dataset/titanic/data_clean.csv')
 
 '''
@@ -498,14 +500,14 @@ from sklearn.model_selection import train_test_split
 from sklearn import metrics #accuracy measure
 from sklearn.metrics import confusion_matrix #for confusion matrix
 
-train, test = train_test_split(data_clean, test_size=0.3, random_state=0, stratify=data['Survived'])
+train, test = train_test_split(data_clean, test_size=0.3, random_state=0, stratify=data_clean['Survived'])
 # stratify : 지정한 데이터의 비율 유지
 train_x=train[train.columns[1:]]
 train_y=train[train.columns[:1]]
 test_x=test[test.columns[1:]]
 test_y=test[test.columns[:1]]
-x=data[data.columns[1:]]
-y=data[data.columns[:1]]
+x=data_clean[data_clean.columns[1:]]
+y=data_clean[data_clean.columns[:1]]
 
 #Radial Support Vector Machines : rbf-SVM
 model = svm.SVC(kernel='rbf', C=1, gamma=0.1)
@@ -528,12 +530,12 @@ pred3 = model.predict(test_x)
 print(metrics.accuracy_score(pred3,test_y))
 #0.817
 
-#Decision TRee
+#Decision Tree
 model = DecisionTreeClassifier()
 model.fit(train_x,train_y)
 pred4 = model.predict(test_x)
 print(metrics.accuracy_score(pred4,test_y))
-#0.809
+#0.802
 
 #K-Nearest Neighbors(KNN)
 model = KNeighborsClassifier()
@@ -547,7 +549,7 @@ The default value is 5. Lets check the accuracies over various values of n_neigh
 '''
 a_index = list(range(1,11))
 a = pd.Series()
-x = [0,1,2,3,4,5,6,7,8,9,10]
+xt = [0,1,2,3,4,5,6,7,8,9,10]
 
 for i in list(range(1,11)):
     model = KNeighborsClassifier(n_neighbors=i)
@@ -556,7 +558,7 @@ for i in list(range(1,11)):
     a = a.append(pd.Series(metrics.accuracy_score(pred,test_y)))
 
 plt.plot(a_index,a)
-plt.xticks(x)
+plt.xticks(xt)
 fig.plt.gcf()
 fig.set_size_inches(12,6)
 plt.show()
@@ -649,3 +651,162 @@ We can get a summarized result with the help of confusion matrix, which shows wh
 or which class did the model predict wrong.
 '''
 
+f,ax=plt.subplots(3,3,figsize=(12,10))
+y_pred=cross_val_predict(svm.SVC(kernel='rbf'),x,y,cv=10)
+sns.heatmap(confusion_matrix(y,y_pred),ax=ax[0,0],annot=True,fmt='2.0f')
+ax[0,0].set_title('Matrix for rfb-svm')
+y_pred = cross_val_predict(svm.SVC(kernel='linear'),x,y,cv=10)
+sns.heatmap(confusion_matrix(y,y_pred),ax=ax[0,1],annot=True,fmt='2.0f')
+ax[0,1].set_title('Matrix for Linear-SVM')
+y_pred = cross_val_predict(KNeighborsClassifier(n_neighbors=9),x,y,cv=10)
+sns.heatmap(confusion_matrix(y,y_pred),ax=ax[0,2],annot=True,fmt='2.0f')
+ax[0,2].set_title('Matrix for KNN')
+y_pred = cross_val_predict(RandomForestClassifier(n_estimators=100),x,y,cv=10)
+sns.heatmap(confusion_matrix(y,y_pred),ax=ax[1,0],annot=True,fmt='2.0f')
+ax[1,0].set_title('Matrix for Random-Forests')
+y_pred = cross_val_predict(LogisticRegression(),x,y,cv=10)
+sns.heatmap(confusion_matrix(y,y_pred),ax=ax[1,1],annot=True,fmt='2.0f')
+ax[1,1].set_title('Matrix for Logistic Regression')
+y_pred = cross_val_predict(DecisionTreeClassifier(),x,y,cv=10)
+sns.heatmap(confusion_matrix(y,y_pred),ax=ax[1,2],annot=True,fmt='2.0f')
+ax[1,2].set_title('Matrix for Decision Tree')
+y_pred = cross_val_predict(GaussianNB(),x,y,cv=10)
+sns.heatmap(confusion_matrix(y,y_pred),ax=ax[2,0],annot=True,fmt='2.0f')
+ax[2,0].set_title('Matrix for Naive Bayes')
+plt.subplots_adjust(hspace=0.2,wspace=0.2)
+plt.show()
+
+
+'''
+Interpreting Confusion Matrix
+The left diagonal shows the number of correct predictions made for each class while the right diagonal shows the number of wrong prredictions made. 
+Lets consider the first plot for rbf-SVM:
+1)The no. of correct predictions are 491(for dead) + 247(for survived) with the mean CV accuracy being (491+247)/891 = 82.8% 
+which we did get earlier.
+2)Errors--> Wrongly Classified 58 dead people as survived and 95 survived as dead. 
+Thus it has made more mistakes by predicting dead as survived.
+By looking at all the matrices, we can say that rbf-SVM has a higher chance in correctly predicting dead passengers 
+but NaiveBayes has a higher chance in correctly predicting passengers who survived.
+'''
+
+'''
+Hyper-Parameters Tuning
+The machine learning models are like a Black-Box. 
+There are some default parameter values for this Black-Box, which we can tune or change to get a better model. 
+Like the C and gamma in the SVM model and similarly different parameters for different classifiers, are called the hyper-parameters, 
+which we can tune to change the learning rate of the algorithm and get a better model. 
+This is known as Hyper-Parameter Tuning.
+We will tune the hyper-parameters for the 2 best classifiers i.e the SVM and RandomForests.
+'''
+
+#SVM
+from sklearn.model_selection import GridSearchCV
+C=[0.05,0.1,0.2,0.3,0.25,0.4,0.5,0.6,0.7,0.8,0.9,1]
+gamma=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+kernel=['rbf','linear']
+hyper={'kernel':kernel,'C':gamma}
+gd=GridSearchCV(estimator=svm.SVC(), param_grid=hyper, verbose=True)
+gd.fit(x,y)
+print(gd.best_score_)
+print(gd.best_estimator_)
+'''
+0.8282828282828283
+SVC(C=0.5, cache_size=200, class_weight=None, coef0=0.0,
+    decision_function_shape='ovr', degree=3, gamma='auto_deprecated',
+    kernel='rbf', max_iter=-1, probability=False, random_state=None,
+    shrinking=True, tol=0.001, verbose=False)
+'''
+
+#Random Forest
+n_estimators=range(100,1000,100)
+hyper={'n_estimators':n_estimators}
+gd=GridSearchCV(estimator=RandomForestClassifier(random_state=0),param_grid=hyper,verbose=True)
+gd.fit(x,y)
+print(gd.best_score_)
+print(gd.best_estimator_)
+'''
+0.8170594837261503
+RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
+                       max_depth=None, max_features='auto', max_leaf_nodes=None,
+                       min_impurity_decrease=0.0, min_impurity_split=None,
+                       min_samples_leaf=1, min_samples_split=2,
+                       min_weight_fraction_leaf=0.0, n_estimators=900,
+                       n_jobs=None, oob_score=False, random_state=0, verbose=0,
+                       warm_start=False)
+'''
+#The best score for Rbf-Svm is 82.82% with C=0.05 and gamma=0.1. For RandomForest, score is abt 81.8% with n_estimators=900.
+
+
+'''
+Ensembling
+Ensembling is a good way to increase the accuracy or performance of a model. 
+In simple words, it is the combination of various simple models to create a single powerful model.
+
+Lets say we want to buy a phone and ask many people about it based on various parameters. 
+So then we can make a strong judgement about a single product after analysing all different parameters. 
+This is Ensembling, which improves the stability of the model. 
+Ensembling can be done in ways like:
+
+1)Voting Classifier
+2)Bagging
+3)Boosting
+'''
+
+'''
+Voting Classifier
+It is the simplest way of combining predictions from many different simple machine learning models. 
+It gives an average prediction result based on the prediction of all the submodels. 
+The submodels or the basemodels are all of diiferent types.
+'''
+
+from sklearn.ensemble import VotingClassifier
+ensemble_lin_rbf = VotingClassifier(estimators=[('KNN',KNeighborsClassifier(n_neighbors=10)),
+                                                ('RBF', svm.SVC(probability=True, kernel='rbf', C=0.5, gamma=0.1)),
+                                                ('RFor', RandomForestClassifier(n_estimators=500, random_state=0)),
+                                                ('LR', LogisticRegression(C=0.05)),
+                                                ('DT', DecisionTreeClassifier(random_state=0)),
+                                                ('NB', GaussianNB()),
+                                                ('svm', svm.SVC(kernel='linear', probability=True))
+                                                ],voting='soft').fit(train_x,train_y)
+
+print('The accuracy for ensembled model is:',ensemble_lin_rbf.score(test_x,test_y))
+#0.824
+cross = cross_val_score(ensemble_lin_rbf,x,y,cv=10,scoring='accuracy')
+print('The corss validation score is:',cross.mean())
+#0.823
+
+
+'''
+Bagging
+Bagging is a general ensemble method. 
+It works by applying similar classifiers on small partitions of the dataset and then taking the average of all the predictions. 
+Due to the averaging,there is reduction in variance. 
+Unlike Voting Classifier, Bagging makes use of similar classifiers.
+'''
+
+'''
+Bagged KNN
+Bagging works best with models with high variance. 
+An example for this can be Decision Tree or Random Forests. 
+We can use KNN with small value of n_neighbours, as small value of n_neighbours.
+'''
+
+from sklearn.ensemble import BaggingClassifier
+model=BaggingClassifier(base_estimator=KNeighborsClassifier(n_neighbors=3),random_state=0,n_estimators=700)
+model.fit(train_x,train_y)
+prediction = model.predict(test_x)
+print('The accuracy for bagged KNN is:',metrics.accuracy_score(prediction,test_y))
+#0.835
+result=cross_val_score(model,x,y,cv=10,scoring='accuracy')
+print('The cross validated score for bagged KNN is:',result.mean())
+#0.814
+
+# Bagged DecisionTree
+model=BaggingClassifier(base_estimator=DecisionTreeClassifier(),random_state=0,n_estimators=100)
+model.fit(train_x,train_y)
+prediction=model.predict(test_x)
+print('The accuracy for bagged Decision Tree is:',metrics.accuracy_score(prediction,test_y))
+#0.824
+result=cross_val_score(model,x,y,cv=10,scoring='accuracy')
+print('The cross validated score for bagged Decision Tree is:',result.mean())
+#0.820
