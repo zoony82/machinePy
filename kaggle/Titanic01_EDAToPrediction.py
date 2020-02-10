@@ -104,7 +104,7 @@ This looks to be a very important feature for modeling. But is it the best?? Let
 
 # Pclass --> Oridinal Feature
 
-pd.crosstab(data.Pclass, data.Survived, margins=True).style.background_gradient(cmap='summer_r')
+pd.crosstab(data.Pclass, data.Survived, margins=True)#.style.background_gradient(cmap='summer_r')
 
 f,ax = plt.subplots(1,2,figsize=(18,8))
 data['Pclass'].value_counts().plot.bar(ax=ax[0])
@@ -186,7 +186,8 @@ pd.crosstab(data.Initial,data.Sex).T
 Okay so there are some misspelled Initials like Mlle or Mme that stand for Miss. 
 I will replace them with Miss and same thing for other values.
 '''
-data['Initial'].replace(['Mlle','Mme','Ms','Dr','Major','Lady','Countess','Jonkheer','Col','Rev','Capt','Sir','Don'],['Miss','Miss','Miss','Mr','Mr','Mrs','Mrs','Other','Other','Other','Mr','Mr','Mr'],inplace=True)
+data['Initial'].replace(['Mlle','Mme','Ms','Dr','Major','Lady','Countess','Jonkheer','Col','Rev','Capt','Sir','Don'],
+                        ['Miss','Miss','Miss','Mr','Mr','Mrs','Mrs','Other','Other','Other','Mr','Mr','Mr'],inplace=True)
 # lets check the avaerage age by Initials
 data.groupby('Initial')['Age'].mean()
 
@@ -474,6 +475,10 @@ data.to_csv('/home/jjh/문서/dataset/titanic/data_clean.csv',index=False)
 ############################
 # Part3: Predictive Modeling
 ############################
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 data_clean = pd.read_csv('/home/jjh/문서/dataset/titanic/data_clean.csv')
 
 '''
@@ -506,8 +511,8 @@ train_x=train[train.columns[1:]]
 train_y=train[train.columns[:1]]
 test_x=test[test.columns[1:]]
 test_y=test[test.columns[:1]]
-x=data_clean[data_clean.columns[1:]]
-y=data_clean[data_clean.columns[:1]]
+all_x=data_clean[data_clean.columns[1:]]
+all_y=data_clean[data_clean.columns[:1]]
 
 #Radial Support Vector Machines : rbf-SVM
 model = svm.SVC(kernel='rbf', C=1, gamma=0.1)
@@ -576,7 +581,7 @@ model = RandomForestClassifier(n_estimators=100)
 model.fit(train_x,train_y)
 pred7 = model.predict(test_x)
 print(metrics.accuracy_score(pred7,test_y))
-#0.817
+#0.820
 
 '''
 The accuracy of a model is not the only factor that determines the robustness of the classifier. 
@@ -616,7 +621,7 @@ classifiers = ['Linear Svm','Radial Svm','Logistic Regression','KNN','Decision T
 models = [svm.SVC(kernel='linear'),svm.SVC(kernel='rbf'),LogisticRegression(),KNeighborsClassifier(n_neighbors=9),DecisionTreeClassifier(),GaussianNB(),RandomForestClassifier(n_estimators=100)]
 for i in models:
     model = i
-    cv_result = cross_val_score(model,x,y,cv=kfold,scoring="accuracy")
+    cv_result = cross_val_score(model, all_x, all_y, cv=kfold, scoring="accuracy")
     cv_result = cv_result
     xyz.append(cv_result.mean())
     std.append(cv_result.std())
@@ -630,9 +635,9 @@ Linear Svm           0.793471  0.047797
 Radial Svm           0.828290  0.034427
 Logistic Regression  0.805843  0.021861
 KNN                  0.813783  0.041210
-Decision Tree        0.808127  0.029966
+Decision Tree        0.808115  0.029225
 Naive Bayes          0.801386  0.028999
-Random Forest        0.815955  0.035495
+Random Forest        0.808115  0.030077
 '''
 
 plt.subplots(figsize=(12,6))
@@ -652,26 +657,26 @@ or which class did the model predict wrong.
 '''
 
 f,ax=plt.subplots(3,3,figsize=(12,10))
-y_pred=cross_val_predict(svm.SVC(kernel='rbf'),x,y,cv=10)
-sns.heatmap(confusion_matrix(y,y_pred),ax=ax[0,0],annot=True,fmt='2.0f')
+y_pred=cross_val_predict(svm.SVC(kernel='rbf'), all_x, all_y, cv=10)
+sns.heatmap(confusion_matrix(all_y, y_pred), ax=ax[0, 0], annot=True, fmt='2.0f')
 ax[0,0].set_title('Matrix for rfb-svm')
-y_pred = cross_val_predict(svm.SVC(kernel='linear'),x,y,cv=10)
-sns.heatmap(confusion_matrix(y,y_pred),ax=ax[0,1],annot=True,fmt='2.0f')
+y_pred = cross_val_predict(svm.SVC(kernel='linear'), all_x, all_y, cv=10)
+sns.heatmap(confusion_matrix(all_y, y_pred), ax=ax[0, 1], annot=True, fmt='2.0f')
 ax[0,1].set_title('Matrix for Linear-SVM')
-y_pred = cross_val_predict(KNeighborsClassifier(n_neighbors=9),x,y,cv=10)
-sns.heatmap(confusion_matrix(y,y_pred),ax=ax[0,2],annot=True,fmt='2.0f')
+y_pred = cross_val_predict(KNeighborsClassifier(n_neighbors=9), all_x, all_y, cv=10)
+sns.heatmap(confusion_matrix(all_y, y_pred), ax=ax[0, 2], annot=True, fmt='2.0f')
 ax[0,2].set_title('Matrix for KNN')
-y_pred = cross_val_predict(RandomForestClassifier(n_estimators=100),x,y,cv=10)
-sns.heatmap(confusion_matrix(y,y_pred),ax=ax[1,0],annot=True,fmt='2.0f')
+y_pred = cross_val_predict(RandomForestClassifier(n_estimators=100), all_x, all_y, cv=10)
+sns.heatmap(confusion_matrix(all_y, y_pred), ax=ax[1, 0], annot=True, fmt='2.0f')
 ax[1,0].set_title('Matrix for Random-Forests')
-y_pred = cross_val_predict(LogisticRegression(),x,y,cv=10)
-sns.heatmap(confusion_matrix(y,y_pred),ax=ax[1,1],annot=True,fmt='2.0f')
+y_pred = cross_val_predict(LogisticRegression(), all_x, all_y, cv=10)
+sns.heatmap(confusion_matrix(all_y, y_pred), ax=ax[1, 1], annot=True, fmt='2.0f')
 ax[1,1].set_title('Matrix for Logistic Regression')
-y_pred = cross_val_predict(DecisionTreeClassifier(),x,y,cv=10)
-sns.heatmap(confusion_matrix(y,y_pred),ax=ax[1,2],annot=True,fmt='2.0f')
+y_pred = cross_val_predict(DecisionTreeClassifier(), all_x, all_y, cv=10)
+sns.heatmap(confusion_matrix(all_y, y_pred), ax=ax[1, 2], annot=True, fmt='2.0f')
 ax[1,2].set_title('Matrix for Decision Tree')
-y_pred = cross_val_predict(GaussianNB(),x,y,cv=10)
-sns.heatmap(confusion_matrix(y,y_pred),ax=ax[2,0],annot=True,fmt='2.0f')
+y_pred = cross_val_predict(GaussianNB(), all_x, all_y, cv=10)
+sns.heatmap(confusion_matrix(all_y, y_pred), ax=ax[2, 0], annot=True, fmt='2.0f')
 ax[2,0].set_title('Matrix for Naive Bayes')
 plt.subplots_adjust(hspace=0.2,wspace=0.2)
 plt.show()
@@ -706,7 +711,7 @@ gamma=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
 kernel=['rbf','linear']
 hyper={'kernel':kernel,'C':gamma}
 gd=GridSearchCV(estimator=svm.SVC(), param_grid=hyper, verbose=True)
-gd.fit(x,y)
+gd.fit(all_x, all_y)
 print(gd.best_score_)
 print(gd.best_estimator_)
 '''
@@ -721,7 +726,7 @@ SVC(C=0.5, cache_size=200, class_weight=None, coef0=0.0,
 n_estimators=range(100,1000,100)
 hyper={'n_estimators':n_estimators}
 gd=GridSearchCV(estimator=RandomForestClassifier(random_state=0),param_grid=hyper,verbose=True)
-gd.fit(x,y)
+gd.fit(all_x, all_y)
 print(gd.best_score_)
 print(gd.best_estimator_)
 '''
@@ -771,7 +776,7 @@ ensemble_lin_rbf = VotingClassifier(estimators=[('KNN',KNeighborsClassifier(n_ne
 
 print('The accuracy for ensembled model is:',ensemble_lin_rbf.score(test_x,test_y))
 #0.824
-cross = cross_val_score(ensemble_lin_rbf,x,y,cv=10,scoring='accuracy')
+cross = cross_val_score(ensemble_lin_rbf, all_x, all_y, cv=10, scoring='accuracy')
 print('The corss validation score is:',cross.mean())
 #0.823
 
@@ -797,7 +802,7 @@ model.fit(train_x,train_y)
 prediction = model.predict(test_x)
 print('The accuracy for bagged KNN is:',metrics.accuracy_score(prediction,test_y))
 #0.835
-result=cross_val_score(model,x,y,cv=10,scoring='accuracy')
+result=cross_val_score(model, all_x, all_y, cv=10, scoring='accuracy')
 print('The cross validated score for bagged KNN is:',result.mean())
 #0.814
 
@@ -807,6 +812,96 @@ model.fit(train_x,train_y)
 prediction=model.predict(test_x)
 print('The accuracy for bagged Decision Tree is:',metrics.accuracy_score(prediction,test_y))
 #0.824
-result=cross_val_score(model,x,y,cv=10,scoring='accuracy')
+result=cross_val_score(model, all_x, all_y, cv=10, scoring='accuracy')
 print('The cross validated score for bagged Decision Tree is:',result.mean())
 #0.820
+
+'''
+Boosting
+Boosting is an ensembling technique which uses sequential learning of classifiers. 
+It is a step by step enhancement of a weak model.
+Boosting works as follows:
+A model is first trained on the complete dataset. 
+Now the model will get some instances right while some wrong. 
+Now in the next iteration, the learner will focus more on the wrongly predicted instances or give more weight to it. 
+Thus it will try to predict the wrong instance correctly. 
+Now this iterative process continous, and new classifers are added to the model until the limit is reached on the accuracy.
+'''
+
+'''
+AdaBoost(Adaptive Boosting)
+The weak learner or estimator in this case is a Decsion Tree. 
+But we can change the dafault base_estimator to any algorithm of our choice.
+'''
+from sklearn.ensemble import AdaBoostClassifier
+ada=AdaBoostClassifier(n_estimators=200,random_state=0,learning_rate=0.1)
+result=cross_val_score(ada,all_x,all_y,cv=10,scoring='accuracy')
+print('The cross validated score for AdaBoost is:',result.mean())
+# 0.824
+
+'''
+Stochastic Gradient Boosting
+Here too the weak learner is a Decision Tree.
+'''
+from sklearn.ensemble import GradientBoostingClassifier
+grad=GradientBoostingClassifier(n_estimators=500,random_state=0,learning_rate=0.1)
+result=cross_val_score(grad,all_x,all_y,cv=10,scoring='accuracy')
+print('The cross validated score for Gradient Boosting is:',result.mean())
+#0.818
+
+#XGBoost
+import xgboost as xg
+xgboost=xg.XGBClassifier(n_estimators=900,learning_rate=0.1)
+result=cross_val_score(xgboost,all_x,all_y,cv=10,scoring='accuracy')
+print('The cross validated score for XGBoost is:',result.mean())
+
+#Hyper-Parameter Tuning for AdaBoost
+n_estimators=list(range(100,1100,100))
+learn_rate=[0.05,0.1,0.2,0.3,0.25,0.4,0.5,0.6,0.7,0.8,0.9,1]
+hyper={'n_estimators':n_estimators,'learning_rate':learn_rate}
+gd=GridSearchCV(estimator=AdaBoostClassifier(),param_grid=hyper,verbose=True)
+gd.fit(all_x,all_y)
+print(gd.best_score_)
+print(gd.best_estimator_)
+'''
+0.8316498316498316
+AdaBoostClassifier(algorithm='SAMME.R', base_estimator=None, learning_rate=0.05,
+                   n_estimators=200, random_state=None)
+'''
+
+
+#Confusion Matrix for the Best Model
+ada=AdaBoostClassifier(n_estimators=200,random_state=0,learning_rate=0.05)
+result=cross_val_predict(ada,all_x,all_y,cv=10)
+sns.heatmap(confusion_matrix(all_y,result),cmap='winter',annot=True,fmt='2.0f')
+plt.show()
+
+#Feature Importance
+f,ax=plt.subplots(2,2,figsize=(15,12))
+model=RandomForestClassifier(n_estimators=500,random_state=0)
+model.fit(all_x, all_y)
+pd.Series(model.feature_importances_, all_x.columns).sort_values(ascending=True).plot.barh(width=0.8, ax=ax[0, 0])
+ax[0,0].set_title('Feature Importance in Random Forests')
+model=AdaBoostClassifier(n_estimators=200,learning_rate=0.05,random_state=0)
+model.fit(all_x, all_y)
+pd.Series(model.feature_importances_, all_x.columns).sort_values(ascending=True).plot.barh(width=0.8, ax=ax[0, 1], color='#ddff11')
+ax[0,1].set_title('Feature Importance in AdaBoost')
+model=GradientBoostingClassifier(n_estimators=500,learning_rate=0.1,random_state=0)
+model.fit(all_x, all_y)
+pd.Series(model.feature_importances_, all_x.columns).sort_values(ascending=True).plot.barh(width=0.8, ax=ax[1, 0], cmap='RdYlGn_r')
+ax[1,0].set_title('Feature Importance in Gradient Boosting')
+model=xg.XGBClassifier(n_estimators=900,learning_rate=0.1)
+model.fit(all_x, all_y)
+pd.Series(model.feature_importances_, all_x.columns).sort_values(ascending=True).plot.barh(width=0.8, ax=ax[1, 1], color='#FD0F00')
+ax[1,1].set_title('Feature Importance in XgBoost')
+plt.show()
+
+'''
+Observations:
+1)Some of the common important features are Initial,Fare_cat,Pclass,Family_Size.
+2)The Sex feature doesn't seem to give any importance, which is shocking as we had seen earlier that Sex combined with Pclass was giving a very good differentiating factor. 
+Sex looks to be important only in RandomForests.
+However, we can see the feature Initial, which is at the top in many classifiers.
+We had already seen the positive correlation between Sex and Initial, so they both refer to the gender.
+3)Similarly the Pclass and Fare_cat refer to the status of the passengers and Family_Size with Alone,Parch and SibSp.
+'''
