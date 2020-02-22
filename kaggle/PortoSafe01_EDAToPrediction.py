@@ -24,8 +24,13 @@ from sklearn.linear_model import LogisticRegression
 trainset = pd.read_csv("/home/jjh/문서/dataset/porto_driver/train.csv")
 testset = pd.read_csv("/home/jjh/문서/dataset/porto_driver/test.csv")
 
+pd.set_option ( 'display.max_columns', 10)
+pd.set_option ( 'display.width', 400)
+
 trainset.head()
 
+len(trainset.columns) #59
+len(testset.columns) #58
 #Few quick observation
 '''
 We can make few observations based on the data description in the competition:
@@ -77,6 +82,10 @@ category: ind, reg, car, calc
 '''
 
 data=[]
+
+for feature in trainset.columns:
+    if 'bin' in feature:
+        print(feature)
 
 for feature in trainset.columns:
     # Defining the role
@@ -138,6 +147,9 @@ metadata[(metadata.type == 'categorical') & (metadata.preserve)].index
 
 # Let's inspect all features, to see how many category distinct values do we have:
 metadata.groupby('category').count()
+metadata.groupby('category').size()
+metadata.groupby('category')['category'].size()
+metadata.groupby(['category'])['category'].size()
 {'count' : metadata.groupby(['category'])['category'].size()}
 pd.DataFrame({'count' : metadata.groupby(['category'])['category'].size()}).reset_index()
 
@@ -146,4 +158,84 @@ There are one nominal feature (the id), 20 binary values, 21 real (or float numb
 - all these being as well input values and one target value, which is as well binary, the target.
 '''
 
+pd.DataFrame({'count': metadata.groupby(['use','type'])['use'].size()}).reset_index()
+'''
+There are one nominal feature (the id), 20 binary values, 21 real (or float numbers), 16 categorical features - 
+all these being as well input values and one target value, which is as well binary, the target.
+'''
+
 # Data analysis and statistics
+
+#Target Value
+plt.figure()
+fig, ax = plt.subplots(figsize=(6,6))
+x = trainset['target'].value_counts().index.values
+y = trainset['target'].value_counts().values
+sns.barplot(ax=ax, x=x, y=y)
+plt.ylabel('number of values')
+plt.xlabel('target value')
+plt.tick_params(axis='both', which='major', labelsize=12)
+plt.show()
+
+'''
+Only 3.64% of the target data have 1 value. 
+This means that the training dataset is highly imbalanced. 
+We can either undersample the records with target = 0 or oversample records with target = 1; 
+because is a large dataset, we will do undersampling of records with target = 0.
+'''
+
+#Real features
+variable = metadata[(metadata.type=='real') & (metadata.preserve)].index
+len(variable) #20
+trainset[variable[0:11]].describe()
+trainset[variable[11:21]].describe()
+
+# ps_reg_03, ps_car_12, ps_car_14 have missing value
+# ps_reg_01 and ps_reg_02 are fractions with denominator 10 (values of 0.1, 0.2, 0.3 )
+
+# car features
+pow(trainset['ps_car_12']*10,2).head()
+pow(trainset['ps_car_15'],2).head()
+
+'''
+ps_car_12 are (with some approximations) square roots (divided by 10) of natural numbers whilst ps_car_15 are square roots of natural numbers. 
+Let's represent the values using pairplot.
+'''
+
+sample = trainset.sample(frac=0.05)
+sample = sample[['ps_car_12','ps_car_15','target']]
+sns.pairplot(sample, hue='target', palette='Set1', diag_kind='kde')
+plt.show()
+
+'''
+Calculated features
+The features ps_calc_01, ps_calc_02 and ps_calc_03 have very similar distributions and could be some kind of ratio, 
+since the maximum value is for all three 0.9. 
+The other calculated values have maximum value an integer value (5,6,7, 10,12).
+Let's visualize the real features distribution using density plot.
+'''
+
+var = metadata[(metadata.type=='real') & (metadata.preserve)].index
+
+len(trainset)
+t1 = trainset.loc[trainset['target']!=0]
+t0 = trainset.loc[trainset['target']==0]
+
+sns.set_style('whitegrid')
+plt.figure()
+fig, ax = plt.subplots(3,4,figsize=(16,12))
+i = 0
+for feature in var:
+    i += 1
+    plt.subplot(3,4,i)
+    sns.kdeplot(t1[feature], bw=0.5, label='target 1')
+    sns.kdeplot(t0[feature], bw=0.5, label='target 0')
+    plt.ylabel('Density plot', fontsize=12)
+    plt.xlabel(feature, fontsize=10)
+    icons, labels = plt.xticks()
+    plt.tick_params(axis='both', which='major', labelsize=12)
+plt.show()
+
+'''
+ps_reg_02, ps_car_13, ps_car_15 shows the most different distributions between sets of values associated with target=0 and target=1.
+'''
