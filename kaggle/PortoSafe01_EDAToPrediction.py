@@ -84,10 +84,6 @@ category: ind, reg, car, calc
 data=[]
 
 for feature in trainset.columns:
-    if 'bin' in feature:
-        print(feature)
-
-for feature in trainset.columns:
     # Defining the role
     if feature == 'target':
         use = 'target'
@@ -167,16 +163,13 @@ all these being as well input values and one target value, which is as well bina
 # Data analysis and statistics
 
 #Target Value
-plt.figure()
+# plt.figure()
 fig, ax = plt.subplots(figsize=(6,6))
 x = trainset['target'].value_counts().index.values
 y = trainset['target'].value_counts().values
-sns.barplot(ax=ax, x=x, y=y)
-plt.ylabel('number of values')
-plt.xlabel('target value')
-plt.tick_params(axis='both', which='major', labelsize=12)
-plt.show()
-
+sns.barplot(x=x, y=y,ax=ax)
+plt.xlabel("target value")
+plt.ylabel("count")
 '''
 Only 3.64% of the target data have 1 value. 
 This means that the training dataset is highly imbalanced. 
@@ -188,7 +181,7 @@ because is a large dataset, we will do undersampling of records with target = 0.
 variable = metadata[(metadata.type=='real') & (metadata.preserve)].index
 len(variable) #20
 trainset[variable[0:11]].describe()
-trainset[variable[11:21]].describe()
+# trainset[variable[11:15]].describe()
 
 # ps_reg_03, ps_car_12, ps_car_14 have missing value
 # ps_reg_01 and ps_reg_02 are fractions with denominator 10 (values of 0.1, 0.2, 0.3 )
@@ -216,13 +209,13 @@ Let's visualize the real features distribution using density plot.
 '''
 
 var = metadata[(metadata.type=='real') & (metadata.preserve)].index
-
+len(var)
 len(trainset)
 t1 = trainset.loc[trainset['target']!=0]
 t0 = trainset.loc[trainset['target']==0]
 
 sns.set_style('whitegrid')
-plt.figure()
+# plt.figure()
 fig, ax = plt.subplots(3,4,figsize=(16,12))
 i = 0
 for feature in var:
@@ -238,4 +231,59 @@ plt.show()
 
 '''
 ps_reg_02, ps_car_13, ps_car_15 shows the most different distributions between sets of values associated with target=0 and target=1.
+'''
+
+#Let's visualize the correlation between the real features
+
+def corr_headtmap(var):
+    correlations = trainset[var].corr()
+    cmap = sns.diverging_palette(50,10,as_cmap=True)
+    fig, ax = plt.subplots(figsize=(10,10))
+    sns.heatmap(correlations, cmap=cmap, vmax=1.0, center=0, fmt='.2f', square=True, linewidths=.5, annot=True, cbar_kws={"shrink":.75})
+    plt.show()
+
+var = metadata[(metadata.type=='real') & (metadata.preserve)].index
+corr_headtmap(var)
+'''
+Let's visualize the plots of the variables with strong correlations. These are:
+ps_reg_01 with ps_reg_02 (0.47);
+ps_reg_01 with ps_reg_03 (0.64);
+ps_reg_02 with ps_reg_03 (0.52);
+ps_car_12 with ps_car_13 (0.67);
+ps_car_13 with ps_car_15 (0.53);
+'''
+
+# To show the pairs of values that are correlated we use pairplot.
+# Before representing the pairs, we subsample the data, using only 2% in the sample.
+
+sample = trainset.sample(frac=0.05)
+var = ['ps_reg_01', 'ps_reg_02', 'ps_reg_03', 'ps_car_12', 'ps_car_13', 'ps_car_15', 'target']
+sample = sample[var]
+sns.pairplot(sample, hue='target', palette='Set1', diag_kind='kde')
+plt.show()
+
+# Binary Features
+v = metadata[(metadata.type == 'binary') & (metadata.preserve)].index
+trainset[v].describe()
+
+# Let's plot the distribution of the binary data in the training dataset.
+# With blue we represent the percent of 0 and with red the percent of 1.
+
+bin_col = [col for col in trainset.columns if '_bin' in col]
+zero_list = []
+one_list = []
+for col in bin_col:
+    zero_list.append((trainset[col] == 0).sum() / trainset[col].shape[0])
+    one_list.append((trainset[col] == 1).sum() / trainset[col].shape[0])
+fig, ax = plt.subplots(figsize=(6,6))
+p1 = sns.barplot(x=bin_col, y=zero_list, color='blue')
+p2 = sns.barplot(x=bin_col, y=one_list, bottom =zero_list , color='red')
+locs, labels = plt.xticks()
+plt.setp(labels, rotation=90)
+
+'''
+ps_ind_10_bin, ps_ind_11_bin, ps_ind_12_bin and ps_ind_13_bin have very small number of values 1 (lesss than 0.5%) 
+whilst the number of value 1 is very large for ps_ind_16_bin and ps_cals_16_bin (more than 60%).
+
+Let's see now the distribution of binary data and the corresponding values of target variable.
 '''
